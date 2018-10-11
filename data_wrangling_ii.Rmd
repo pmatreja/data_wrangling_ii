@@ -1,0 +1,132 @@
+---
+title: "data_wrangling_ii"
+author: "Priyal"
+date: "10/11/2018"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(rvest)
+library(httr)
+
+```
+
+
+## Scrape a table
+
+```{r}
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+drug_use_xml = read_html(url)
+
+```
+
+Get the tables from the html
+
+All the objects labelled as table will be extracted.
+```{r}
+drug_use_xml %>%
+  html_nodes(css = "table")
+```
+
+We have extracted 15 tables. 
+
+Extracting 1st table using square brackets.
+
+```{r}
+drug_use_xml %>%
+  html_nodes(css = "table") %>%
+  .[[1]] %>% 
+  html_table() %>%
+  slice(-1) %>% 
+  as_tibble()
+```
+
+Slice was used to remove the first row.
+
+##Learning Assessment
+
+```{r Learning Assesment}
+
+url = "https://www.bestplaces.net/cost_of_living/city/new_york/new_york"
+
+cost_of_living_ny = read_html(url)
+
+```
+
+
+```{r}
+ cost_of_living_ny %>%
+  html_nodes(css = "table") %>% 
+  .[[1]] %>% 
+  html_table(header = TRUE) 
+```
+
+##CSS Selectors
+
+The information on the Harry Potter Saga page from IMDB does not exist in the form of table. Use Selector Gadget.
+
+```{r}
+title_saga = read_html("https://www.imdb.com/list/ls000630791/") %>% 
+  html_nodes(css = ".lister-item-header a") %>% 
+  html_text()
+
+gross_rev = read_html("https://www.imdb.com/list/ls000630791/") %>% 
+  html_nodes(css = ".text-small:nth-child(7) span:nth-child(5)") %>% 
+  html_text()
+
+hp_saga_df = tibble(title = title_saga, rev = gross_rev)
+
+```
+
+
+```{r}
+url = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber=1"
+
+dynamite_html = read_html(url)
+review_titles = dynamite_html %>%
+  html_nodes("#cm_cr-review_list .review-title") %>%
+  html_text()
+
+review_stars = dynamite_html %>%
+  html_nodes("#cm_cr-review_list .review-rating") %>%
+  html_text()
+
+review_text = dynamite_html %>%
+  html_nodes(".review-data:nth-child(4)") %>%
+  html_text()
+
+review_df = tibble(
+  stars = review_stars,
+  title = review_titles,
+  text = review_text
+  )
+
+
+```
+
+
+##APIs
+
+Get the water data
+
+Here we have used; API--> CSV
+
+```{r}
+nyc_water = GET("https://data.cityofnewyork.us/resource/waf7-5gvc.csv") %>% 
+content("parsed")
+```
+
+Using API--> JSON
+It gives you more information than just the rectangle you extracted with CSV
+```{r}
+nyc_water = GET("https://data.cityofnewyork.us/resource/waf7-5gvc.json") %>% 
+  content("text") %>% 
+   jsonlite::fromJSON() %>% 
+  as_tibble()
+```
+
+
