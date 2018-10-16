@@ -165,4 +165,167 @@ data_marj %>%
 
 
 Here states are reordered by the percent variable. 
+
+
+###Toothbrush reviews
+
+Reading a collection of pages from the web
+
+```{r}
+url_base = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
+
+urls = str_c(url_base, 1:5)
+```
+
+### Factors...
+
+Can get confusing..
+
+Taking an example
+```{r}
+vec_sex = factor(c("male", "male", "female", "female"))
+as.numeric(vec_sex)
+```
+
+R follows alphabetical order and thus denotes female as category 1.
+
+
+```{r}
+vec_sex = relevel(vec_sex, ref = "male")
+vec_sex
+
+as.numeric(vec_sex)
+```
+
+
+### WEATHER DATA
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(c("USW00094728", "USC00519397", "USS0023B17S"),
+                      var = c("PRCP", "TMIN", "TMAX"), 
+                      date_min = "2017-01-01",
+                      date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY", 
+                      USC00519397 = "Waikiki_HA",
+                      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+weather_df
+```
+
+Alphabetically ordered levels
+
+```{r}
+weather_df %>% 
+    mutate(name = factor(name)) %>% pull(name)
+```
+
+
+Reordering the stations 
+
+```{r}
+weather_df %>%
+  mutate(name = forcats::fct_relevel(name, c("Waikiki_HA", "CentralPark_NY", "Waterhole_WA"))) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+
+Factor reorder
+
+It is going to reorder the variable we care about as per the 2nd variable we input(median is the default).
+```{r}
+weather_df %>%
+  mutate(name = fct_reorder(name, tmax)) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+```
+
+
+Interpretating the models and how it depends on the factor levelling.
  
+```{r}
+weather_df %>%
+  mutate(name = forcats::fct_relevel(name, c("Waikiki_HA", "CentralPark_NY", "Waterhole_WA"))) %>% 
+  lm(tmax ~ name, data = .)
+```
+ 
+ 
+### NYC Restaurent Inspections
+
+```{r}
+data(rest_inspec)
+
+rest_inspec %>% 
+  group_by(boro, grade) %>% 
+  summarize(n = n()) %>% 
+  spread(key = grade, value = n)
+```
+
+```{r}
+rest_inspec =
+  rest_inspec %>%
+  filter(grade %in% c("A", "B", "C"), boro != "Missing") %>% 
+  mutate(boro = str_to_title(boro))
+```
+ 
+ 
+ Pizza places
+ 
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "Pizza")) %>% 
+  group_by(boro, grade) %>% 
+  summarize(n = n()) %>% 
+  spread(key = grade, value = n)
+```
+
+
+Remember str_detect is case sensitive!
+
+```{r}
+rest_inspec %>% 
+  filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>% 
+  group_by(boro, grade) %>% 
+  summarize(n = n()) %>% 
+  spread(key = grade, value = n)
+```
+ 
+ Visualizing the data
+ 
+```{r}
+
+library(viridis)
+
+rest_inspec %>% 
+  filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>%
+  ggplot(aes(x = boro, fill = grade)) + 
+  geom_bar() + 
+  scale_fill_viridis(discrete = TRUE)
+```
+ 
+ 
+Reordering...
+ 
+```{r}
+rest_inspec %>% 
+   filter(str_detect(dba, "[Pp][Ii][Zz][Zz][Aa]")) %>%
+  mutate(boro = fct_infreq(boro)) %>% 
+  ggplot(aes(x = boro, fill = grade)) + 
+  geom_bar() + 
+  scale_fill_viridis(discrete = TRUE)
+```
+ 
+Changing factor values
+
+
+Because boro is a fcator variable replacing it isn't allowed.
+ 
+Really change factor values--> Use recode function
+ 
+See stringer::str_ functions
