@@ -113,3 +113,18 @@ str_detect(string_vec6, "\\[")
 If we want to search for \[ and \], ( and ), and . we have to indicate it is special with `\`, but `\` itself is special so we have to put `\\[`
 
 ### PULSE data
+
+Tidying the Pulse dataset
+
+``` r
+pulse_data = haven::read_sas("./data/public_pulse_data.sas7bdat") %>%
+  janitor::clean_names() %>%
+  gather(key = visit, value = bdi, bdi_score_bl:bdi_score_12m) %>%
+  mutate(visit = str_replace(visit, "bdi_score_", ""),
+         visit = str_replace(visit, "bl", "00m"), 
+         visit = fct_relevel(visit, str_c(c("00", "01", "06", "12"), "m"))) %>% 
+  arrange(id, visit)
+```
+
+    ## Warning: attributes are not identical across measure variables;
+    ## they will be dropped
